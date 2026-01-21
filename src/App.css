@@ -1,0 +1,214 @@
+/* App Layout Styles */
+
+.app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-primary);
+}
+
+.app-main {
+    flex: 1;
+    padding: var(--spacing-6);
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* Workflow Steps */
+.workflow {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-6);
+}
+
+.workflow-step {
+    animation: fadeIn var(--transition-normal);
+}
+
+/* Layout Grid for Analysis Mode */
+.analysis-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-6);
+}
+
+@media (max-width: 1024px) {
+    .analysis-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Welcome Section */
+.welcome-section {
+    text-align: center;
+    padding: var(--spacing-8) 0;
+    animation: fadeIn var(--transition-slow);
+}
+
+.welcome-icon {
+    font-size: 4rem;
+    margin-bottom: var(--spacing-4);
+}
+
+.welcome-title {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-2);
+}
+
+.welcome-subtitle {
+    font-size: var(--font-size-lg);
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Results Mode */
+.results-mode {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-6);
+}
+
+/* Footer */
+.app-footer {
+    padding: var(--spacing-4) var(--spacing-6);
+    text-align: center;
+    border-top: 1px solid var(--border-light);
+    background: var(--bg-secondary);
+}
+
+.app-footer-text {
+    font-size: var(--font-size-sm);
+    color: var(--text-tertiary);
+}
+
+/* Quick Stats Bar */
+.quick-stats {
+    display: flex;
+    gap: var(--spacing-4);
+    padding: var(--spacing-4) var(--spacing-6);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    justify-content: space-around;
+}
+
+.quick-stat {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+}
+
+.quick-stat-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-primary-100);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-size-lg);
+}
+
+[data-theme="dark"] .quick-stat-icon {
+    background: rgba(99, 102, 241, 0.2);
+}
+
+.quick-stat-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.quick-stat-value {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+}
+
+.quick-stat-label {
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+}
+
+/* Step Indicator */
+.step-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-4);
+    padding: var(--spacing-4) 0;
+}
+
+.step-dot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-2);
+}
+
+.step-dot-circle {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    border: 2px solid var(--border-default);
+    color: var(--text-tertiary);
+    background: var(--bg-secondary);
+    transition: all var(--transition-fast);
+}
+
+.step-dot.active .step-dot-circle {
+    border-color: var(--color-primary-600);
+    background: var(--color-primary-600);
+    color: white;
+}
+
+.step-dot.completed .step-dot-circle {
+    border-color: var(--color-success-500);
+    background: var(--color-success-500);
+    color: white;
+}
+
+.step-dot-label {
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+}
+
+.step-dot.active .step-dot-label,
+.step-dot.completed .step-dot-label {
+    color: var(--text-primary);
+}
+
+.step-line {
+    width: 60px;
+    height: 2px;
+    background: var(--border-default);
+}
+
+.step-line.completed {
+    background: var(--color-success-500);
+}
+
+/* Analysis in Progress Overlay */
+.analysis-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg-overlay);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--z-modal);
+    padding: var(--spacing-6);
+}
+
+.analysis-overlay-content {
+    width: 100%;
+    max-width: 700px;
+}

@@ -1,0 +1,7 @@
+node_modules
+# Ignore all Word documents
+*.docx
+# Ignore all PDF files
+*.pdf
+# Ignore all Zip archives
+*.zip
