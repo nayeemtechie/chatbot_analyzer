@@ -5,3 +5,4 @@ node_modules
 *.pdf
 # Ignore all Zip archives
 *.zip
+*.txt
