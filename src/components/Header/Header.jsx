@@ -1,13 +1,22 @@
 import { useApp } from '../../context/AppContext';
+import { STORAGE_KEYS } from '../../utils/constants';
 import './Header.css';
 
 export default function Header() {
     const { state, actions } = useApp();
     const { theme, llmConfig } = state;
 
+    const handleReset = () => {
+        // Clear session data before reload
+        sessionStorage.removeItem(STORAGE_KEYS.results);
+        sessionStorage.removeItem(STORAGE_KEYS.transcripts);
+        sessionStorage.removeItem(STORAGE_KEYS.businessContext);
+        window.location.reload();
+    };
+
     return (
         <header className="header">
-            <div className="header-left">
+            <div className="header-left" onClick={handleReset} style={{ cursor: 'pointer' }} title="Reset and start fresh">
                 <svg className="header-logo" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <defs>
                         <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="100%">

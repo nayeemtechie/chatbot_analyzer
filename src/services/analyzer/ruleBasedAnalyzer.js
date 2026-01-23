@@ -511,7 +511,9 @@ function extractBotResponseAnalysis(transcripts) {
 function extractTimePatterns(transcripts) {
     const hourCounts = {};
     const dayCounts = {};
+    const dateCounts = {}; // Track specific dates
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
     for (const transcript of transcripts) {
         // Get the first timestamp from the session
@@ -520,10 +522,15 @@ function extractTimePatterns(transcripts) {
             const date = new Date(firstMessage.timestamp);
             if (!isNaN(date.getTime())) {
                 const hour = date.getHours();
-                const day = dayNames[date.getDay()];
+                const dayOfWeek = dayNames[date.getDay()];
+
+                // Create precise date string (e.g., "Jan 22, 2026")
+                const dateStr = `${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+                const dateWithDay = `${dayOfWeek}, ${dateStr}`;
 
                 hourCounts[hour] = (hourCounts[hour] || 0) + 1;
-                dayCounts[day] = (dayCounts[day] || 0) + 1;
+                dayCounts[dayOfWeek] = (dayCounts[dayOfWeek] || 0) + 1;
+                dateCounts[dateWithDay] = (dateCounts[dateWithDay] || 0) + 1;
             }
         }
     }
@@ -538,21 +545,36 @@ function extractTimePatterns(transcripts) {
         }
     }
 
-    // Find busiest day
-    let busiestDay = null;
+    // Find busiest day of week
+    let busiestDayOfWeek = null;
     let maxDayCount = 0;
     for (const [day, count] of Object.entries(dayCounts)) {
         if (count > maxDayCount) {
             maxDayCount = count;
-            busiestDay = day;
+            busiestDayOfWeek = day;
+        }
+    }
+
+    // Find busiest specific date
+    let busiestDate = null;
+    let maxDateCount = 0;
+    for (const [dateStr, count] of Object.entries(dateCounts)) {
+        if (count > maxDateCount) {
+            maxDateCount = count;
+            busiestDate = dateStr;
         }
     }
 
     return {
         busiestHour: busiestHour !== null ? formatHour(busiestHour) : null,
-        busiestDay,
+        busiestHourCount: maxHourCount,
+        busiestDay: busiestDayOfWeek,
+        busiestDayCount: maxDayCount,
+        busiestDate: busiestDate,
+        busiestDateCount: maxDateCount,
         hourlyDistribution: hourCounts,
         dailyDistribution: dayCounts,
+        dateDistribution: dateCounts,
     };
 }
 

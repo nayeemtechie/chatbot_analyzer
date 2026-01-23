@@ -25,9 +25,7 @@ export const LLM_PROVIDERS = {
         id: 'perplexity',
         name: 'Perplexity',
         models: [
-            { id: 'llama-3.1-sonar-large-128k-online', name: 'Sonar Large (Online)', maxTokens: 128000 },
-            { id: 'llama-3.1-sonar-small-128k-online', name: 'Sonar Small (Online)', maxTokens: 128000 },
-            { id: 'llama-3.1-sonar-huge-128k-online', name: 'Sonar Huge (Online)', maxTokens: 128000 },
+            { id: 'sonar', name: 'Sonar', maxTokens: 128000 },
         ],
         endpoint: 'https://api.perplexity.ai/chat/completions',
     },

@@ -989,20 +989,29 @@ function SessionOverview({ analysis }) {
                 </div>
             </div>
 
-            {(timePatterns.busiestHour || timePatterns.busiestDay) && (
+            {(timePatterns.busiestHour || timePatterns.busiestDay || timePatterns.busiestDate) && (
                 <>
                     <h4 style={{ marginBottom: '16px', color: 'var(--text-secondary)' }}>Time Patterns</h4>
                     <div className="metrics-grid" style={{ marginBottom: '24px' }}>
+                        {timePatterns.busiestDate && (
+                            <div className="metric-card">
+                                <div className="metric-label">Busiest Date</div>
+                                <div className="metric-value" style={{ fontSize: '18px' }}>{timePatterns.busiestDate}</div>
+                                <div className="metric-trend">{timePatterns.busiestDateCount} sessions</div>
+                            </div>
+                        )}
                         {timePatterns.busiestHour && (
                             <div className="metric-card">
                                 <div className="metric-label">Busiest Hour</div>
                                 <div className="metric-value">{timePatterns.busiestHour}</div>
+                                <div className="metric-trend">{timePatterns.busiestHourCount} sessions</div>
                             </div>
                         )}
                         {timePatterns.busiestDay && (
                             <div className="metric-card">
-                                <div className="metric-label">Busiest Day</div>
+                                <div className="metric-label">Busiest Day of Week</div>
                                 <div className="metric-value">{timePatterns.busiestDay}</div>
+                                <div className="metric-trend">{timePatterns.busiestDayCount} sessions</div>
                             </div>
                         )}
                     </div>
@@ -1692,8 +1701,8 @@ function UserInsights({ userBehavior }) {
                                             'var(--bg-secondary)',
                                     borderRadius: '8px',
                                     borderLeft: `4px solid ${insight.type === 'warning' ? 'var(--color-warning-500)' :
-                                            insight.type === 'positive' ? 'var(--color-success-500)' :
-                                                'var(--color-primary-500)'
+                                        insight.type === 'positive' ? 'var(--color-success-500)' :
+                                            'var(--color-primary-500)'
                                         }`
                                 }}
                             >

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { LLM_PROVIDERS } from '../../utils/constants';
 import llmService from '../../services/llm/llmService';
@@ -11,6 +11,19 @@ export default function ConfigPanel() {
     const [showApiKey, setShowApiKey] = useState(false);
     const [testing, setTesting] = useState(false);
     const [testResult, setTestResult] = useState(null);
+
+    const currentProvider = LLM_PROVIDERS[llmConfig.provider];
+
+    // Auto-fix stale model selections (e.g., from old localStorage cache)
+    useEffect(() => {
+        if (currentProvider) {
+            const modelExists = currentProvider.models.some(m => m.id === llmConfig.model);
+            if (!modelExists && currentProvider.models.length > 0) {
+                console.log(`⚠️ Model "${llmConfig.model}" not found in ${llmConfig.provider}, resetting to ${currentProvider.models[0].id}`);
+                actions.setLLMConfig({ model: currentProvider.models[0].id, isConnected: false });
+            }
+        }
+    }, [llmConfig.provider, llmConfig.model, currentProvider, actions]);
 
     const handleProviderChange = (e) => {
         const provider = e.target.value;
@@ -54,8 +67,6 @@ export default function ConfigPanel() {
             setTesting(false);
         }
     };
-
-    const currentProvider = LLM_PROVIDERS[llmConfig.provider];
 
     return (
         <div className="config-panel">

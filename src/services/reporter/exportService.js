@@ -162,11 +162,54 @@ function generateStyledPdfReport(results, filename = 'chatbot-analysis') {
             .page { padding: 20px; }
             .page-header { margin: -20px -20px 20px -20px; padding: 15px 20px; }
         }
-    </style>
+</style>
 </head>
 <body>`;
 
-    // Page 1: Session Overview
+    // Page 1: Site Info
+    const websiteContent = results?.businessContext?.websiteContent;
+    html += `
+    <div class="page">
+        <div class="page-header">
+            <span class="icon">🌐</span>
+            <h1>Site Information</h1>
+        </div>
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Data Source</div>
+                <div class="metric-value" style="font-size: 16px;">Jina AI Reader</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Website URL</div>
+                <div class="metric-value" style="font-size: 14px; word-break: break-all;">${results?.websiteUrl || 'N/A'}</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">AI Analysis</div>
+                <div class="metric-value" style="font-size: 14px;">${results?.llmEnabled ? '✅ Enabled' : '❌ Disabled'}</div>
+            </div>
+        </div>`;
+
+    if (websiteContent?.success) {
+        html += `
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Sitemap URLs</div>
+                <div class="metric-value">${websiteContent.sitemap?.urls?.length || 0}</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Categories Analyzed</div>
+                <div class="metric-value">${websiteContent.categories?.length || 0}</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Products Analyzed</div>
+                <div class="metric-value">${websiteContent.products?.length || 0}</div>
+            </div>
+        </div>`;
+    }
+    html += `</div>`;
+
+    // Page 2: Session Overview
+    const timePatterns = sessionOverview.timePatterns || {};
     html += `
     <div class="page">
         <div class="page-header">
@@ -199,8 +242,40 @@ function generateStyledPdfReport(results, filename = 'chatbot-analysis') {
                 <div class="metric-label">Avg Turns/Session</div>
                 <div class="metric-value">${sessionOverview.turnAnalysis?.avgTurnsPerSession || 'N/A'}</div>
             </div>
-        </div>
-    </div>`;
+        </div>`;
+
+    // Time Patterns
+    if (timePatterns.busiestHour || timePatterns.busiestDay || timePatterns.busiestDate) {
+        html += `
+        <h2>Time Patterns</h2>
+        <div class="metrics-grid">`;
+        if (timePatterns.busiestDate) {
+            html += `
+            <div class="metric-card">
+                <div class="metric-label">Busiest Date</div>
+                <div class="metric-value" style="font-size: 16px;">${timePatterns.busiestDate}</div>
+                <div style="font-size: 12px; color: #64748b;">${timePatterns.busiestDateCount || 0} sessions</div>
+            </div>`;
+        }
+        if (timePatterns.busiestHour) {
+            html += `
+            <div class="metric-card">
+                <div class="metric-label">Busiest Hour</div>
+                <div class="metric-value" style="font-size: 16px;">${timePatterns.busiestHour}</div>
+                <div style="font-size: 12px; color: #64748b;">${timePatterns.busiestHourCount || 0} sessions</div>
+            </div>`;
+        }
+        if (timePatterns.busiestDay) {
+            html += `
+            <div class="metric-card">
+                <div class="metric-label">Busiest Day</div>
+                <div class="metric-value" style="font-size: 16px;">${timePatterns.busiestDay}</div>
+                <div style="font-size: 12px; color: #64748b;">${timePatterns.busiestDayCount || 0} sessions</div>
+            </div>`;
+        }
+        html += `</div>`;
+    }
+    html += `</div>`;
 
     // Page 2: Query Analysis
     html += `
@@ -286,6 +361,31 @@ function generateStyledPdfReport(results, filename = 'chatbot-analysis') {
                 <div class="metric-value" style="color: ${intentCategories.supportRequest > 0 ? '#f59e0b' : '#6366f1'};">${intentCategories.supportRequest || 0}</div>
             </div>
         </div>`;
+
+    // Repeated Queries section
+    const repeatedQueries = userBehavior.repeatedQueries || {};
+    if (repeatedQueries.sessionsWithRepeats > 0) {
+        html += `
+        <h2>Repeated Queries</h2>
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Sessions with Repeats</div>
+                <div class="metric-value warning">${repeatedQueries.sessionsWithRepeats}</div>
+                <div style="font-size: 12px; color: #64748b;">${repeatedQueries.percentage || 0}% of sessions</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Total Repeat Queries</div>
+                <div class="metric-value">${repeatedQueries.totalRepeats || 0}</div>
+            </div>
+        </div>`;
+        if (repeatedQueries.examples?.length > 0) {
+            html += `<div class="evidence-box">`;
+            repeatedQueries.examples.slice(0, 5).forEach(ex => {
+                html += `<div>"${ex.query}" - repeated ${ex.count}x</div>`;
+            });
+            html += `</div>`;
+        }
+    }
 
     if (behaviorInsights.length > 0) {
         html += `<h2>Key Insights</h2>`;
