@@ -717,3 +717,99 @@ FINAL REMINDERS:
 - Focus on query patterns, product recommendations, and response patterns
 - Respond ONLY with valid JSON, no markdown code blocks`;
 }
+
+/**
+ * Site analysis prompt - Extract structured information from raw website content
+ * Used to intelligently parse Jina AI scraped content for categories, products, and industry
+ */
+export function getSiteAnalysisPrompt(url, rawContent) {
+  // Truncate content to avoid token limits (roughly 15k chars)
+  const truncatedContent = rawContent.length > 15000
+    ? rawContent.substring(0, 15000) + '\n\n[Content truncated...]'
+    : rawContent;
+
+  return `You are an expert at analyzing website content to extract structured business information.
+
+WEBSITE URL: ${url}
+
+RAW WEBSITE CONTENT (from homepage):
+${truncatedContent}
+
+TASK:
+Analyze the website content above and extract structured information about this business. Focus on:
+1. Main product/service categories visible on the site
+2. Specific products or product types mentioned
+3. The industry this business operates in
+4. Business model indicators (B2B, B2C, marketplace, etc.)
+
+IMPORTANT GUIDELINES:
+- Only extract information that is ACTUALLY present in the content
+- Ignore navigation elements, login links, and generic website UI elements
+- Focus on main categories and products, not supporting pages
+- If information is not available, use null or empty arrays
+
+Respond with ONLY valid JSON in this exact structure:
+{
+  "industry": "Primary industry (e.g., 'Industrial Equipment', 'Fashion Retail', 'Electronics')",
+  "businessType": "B2B | B2C | Marketplace | Hybrid",
+  "mainCategories": [
+    {
+      "name": "Category Name",
+      "description": "Brief description if available"
+    }
+  ],
+  "productTypes": ["Product type 1", "Product type 2"],
+  "productExamples": ["Specific product 1", "Specific product 2"],
+  "brandIndicators": ["Any brand names mentioned"],
+  "keyFeatures": ["Notable features of the business or products"],
+  "targetAudience": "Description of who this site serves",
+  "confidence": {
+    "overall": "high | medium | low",
+    "reason": "Brief explanation of confidence level"
+  }
+}
+
+Respond ONLY with valid JSON, no markdown code blocks or additional text.`;
+}
+
+/**
+ * URL-only site analysis prompt - Infer site information from URL when content fetch fails
+ * Used as fallback when Jina AI cannot fetch the website content
+ */
+export function getUrlOnlySiteAnalysisPrompt(url) {
+  return `You are an expert at analyzing websites and inferring business information from URLs.
+
+WEBSITE URL: ${url}
+
+TASK:
+The website content could not be fetched. Based ONLY on the URL above, infer what you can about this business.
+Analyze the domain name, subdomain, and any path segments to determine:
+1. The likely industry
+2. Business model (B2B, B2C, marketplace)
+3. Possible product categories
+
+IMPORTANT GUIDELINES:
+- Be clear that this is inference based on the URL only
+- Mark confidence as "low" since no actual content was analyzed
+- Make reasonable inferences but don't fabricate specific details
+- If the URL doesn't provide enough information, state that clearly
+
+Respond with ONLY valid JSON in this exact structure:
+{
+  "industry": "Inferred industry or null if cannot determine",
+  "businessType": "B2B | B2C | Marketplace | Unknown",
+  "mainCategories": [],
+  "productTypes": [],
+  "productExamples": [],
+  "brandIndicators": [],
+  "keyFeatures": [],
+  "targetAudience": "Inferred audience or null",
+  "confidence": {
+    "overall": "low",
+    "reason": "Analysis based on URL only - website content could not be fetched"
+  },
+  "dataSource": "url-inference"
+}
+
+Respond ONLY with valid JSON, no markdown code blocks or additional text.`;
+}

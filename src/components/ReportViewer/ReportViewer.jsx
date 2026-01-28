@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { REPORT_SECTIONS } from '../../utils/constants';
 import { exportAsMarkdown, exportAsPdf } from '../../services/reporter/exportService';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import './ReportViewer.css';
 
 export default function ReportViewer() {
@@ -969,21 +970,21 @@ function SessionOverview({ analysis }) {
 
             <h4 style={{ marginBottom: '16px', color: 'var(--text-secondary)' }}>Turn Analysis</h4>
             <div className="metrics-grid" style={{ marginBottom: '24px' }}>
-                <div className="metric-card">
+                <div className="metric-card" title="Sessions where user asked just 1 query and left — they got what they needed or gave up immediately">
                     <div className="metric-label">Single-Turn Sessions</div>
                     <div className="metric-value">{turnAnalysis.singleTurnSessions || 0}</div>
                     <div className="metric-trend">1 query & done</div>
                 </div>
-                <div className="metric-card">
+                <div className="metric-card" title="Sessions with 2+ queries — user had a conversation with the chatbot">
                     <div className="metric-label">Multi-Turn Sessions</div>
                     <div className="metric-value positive">{turnAnalysis.multiTurnSessions || 0}</div>
                     <div className="metric-trend">2+ queries</div>
                 </div>
-                <div className="metric-card">
+                <div className="metric-card" title="Average number of user messages per session. Low values suggest users treat chatbot as search, high values indicate conversational engagement">
                     <div className="metric-label">Avg Turns/Session</div>
                     <div className="metric-value">{turnAnalysis.avgTurnsPerSession || 'N/A'}</div>
                 </div>
-                <div className="metric-card">
+                <div className="metric-card" title="The longest conversation — maximum number of back-and-forth messages in a single session">
                     <div className="metric-label">Max Turns</div>
                     <div className="metric-value">{turnAnalysis.maxTurnsInSession || 'N/A'}</div>
                 </div>
@@ -1430,6 +1431,8 @@ function SiteInfo({ websiteContent, llmEnabled }) {
     const categories = websiteContent.categories || [];
     const products = websiteContent.products || [];
     const sitemap = websiteContent.sitemap;
+    const extractedCategories = websiteContent.extractedCategories || [];
+    const extractedLinks = websiteContent.extractedLinks || [];
 
     // Extract key info from homepage content
     const extractTitle = (content) => {
@@ -1446,6 +1449,10 @@ function SiteInfo({ websiteContent, llmEnabled }) {
 
     const siteTitle = extractTitle(homepage?.content);
     const siteDescription = extractDescription(homepage?.content);
+
+    // Show extracted categories count if no sitemap categories found
+    const displayCategoryCount = categories.length > 0 ? categories.length : extractedCategories.length;
+    const hasCategories = categories.length > 0 || extractedCategories.length > 0;
 
     return (
         <div>
@@ -1497,14 +1504,124 @@ function SiteInfo({ websiteContent, llmEnabled }) {
                     </div>
                 </div>
                 <div className="metric-card">
-                    <div className="metric-label">Categories Analyzed</div>
-                    <div className="metric-value">{categories.length}</div>
+                    <div className="metric-label">Categories Found</div>
+                    <div className="metric-value">{displayCategoryCount}</div>
+                    {!sitemap?.success && extractedCategories.length > 0 && (
+                        <div className="metric-trend">From homepage</div>
+                    )}
                 </div>
                 <div className="metric-card">
                     <div className="metric-label">Products Analyzed</div>
                     <div className="metric-value">{products.length}</div>
                 </div>
             </div>
+
+            {/* LLM-Extracted Site Analysis */}
+            {websiteContent.llmAnalysis && (
+                <div style={{ marginBottom: '24px', padding: '20px', background: 'linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-primary-100) 100%)', borderRadius: '12px', border: '1px solid var(--color-primary-200)' }}>
+                    <h4 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>🤖</span> AI-Powered Site Analysis
+                        <span className="badge badge-primary" style={{ fontSize: '11px', padding: '2px 8px' }}>LLM</span>
+                    </h4>
+
+                    <div className="metrics-grid" style={{ marginBottom: '16px' }}>
+                        {websiteContent.llmAnalysis.industry && (
+                            <div className="metric-card" style={{ background: 'rgba(255,255,255,0.8)' }}>
+                                <div className="metric-label">Industry</div>
+                                <div className="metric-value" style={{ fontSize: '15px' }}>{websiteContent.llmAnalysis.industry}</div>
+                            </div>
+                        )}
+                        {websiteContent.llmAnalysis.businessType && (
+                            <div className="metric-card" style={{ background: 'rgba(255,255,255,0.8)' }}>
+                                <div className="metric-label">Business Type</div>
+                                <div className="metric-value" style={{ fontSize: '15px' }}>{websiteContent.llmAnalysis.businessType}</div>
+                            </div>
+                        )}
+                        {websiteContent.llmAnalysis.targetAudience && (
+                            <div className="metric-card" style={{ background: 'rgba(255,255,255,0.8)' }}>
+                                <div className="metric-label">Target Audience</div>
+                                <div className="metric-value" style={{ fontSize: '13px' }}>{websiteContent.llmAnalysis.targetAudience}</div>
+                            </div>
+                        )}
+                    </div>
+
+                    {websiteContent.llmAnalysis.mainCategories?.length > 0 && (
+                        <div style={{ marginBottom: '16px' }}>
+                            <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', color: 'var(--text-secondary)' }}>Main Categories</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                {websiteContent.llmAnalysis.mainCategories.map((cat, i) => (
+                                    <span key={i} className="badge badge-primary" style={{ padding: '6px 12px', background: 'var(--color-primary-600)', color: 'white' }}>
+                                        {typeof cat === 'object' ? cat.name : cat}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {websiteContent.llmAnalysis.productTypes?.length > 0 && (
+                        <div style={{ marginBottom: '16px' }}>
+                            <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', color: 'var(--text-secondary)' }}>Product Types</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                {websiteContent.llmAnalysis.productTypes.slice(0, 10).map((type, i) => (
+                                    <span key={i} className="badge" style={{ padding: '4px 10px', background: 'rgba(255,255,255,0.9)', border: '1px solid var(--color-primary-300)' }}>
+                                        {type}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {websiteContent.llmAnalysis.keyFeatures?.length > 0 && (
+                        <div>
+                            <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', color: 'var(--text-secondary)' }}>Key Features</div>
+                            <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                                {websiteContent.llmAnalysis.keyFeatures.slice(0, 5).map((feature, i) => (
+                                    <li key={i}>{feature}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {websiteContent.llmAnalysis.confidence && (
+                        <div style={{ marginTop: '12px', fontSize: '11px', color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span>Confidence: {websiteContent.llmAnalysis.confidence.overall}</span>
+                            {websiteContent.llmAnalysis.confidence.reason && (
+                                <span>• {websiteContent.llmAnalysis.confidence.reason}</span>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Show extracted categories from homepage when sitemap not found */}
+            {extractedCategories.length > 0 && categories.length === 0 && (
+                <>
+                    <h4 style={{ marginBottom: '12px' }}>Categories (Extracted from Homepage)</h4>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '24px' }}>
+                        {extractedCategories.slice(0, 15).map((cat, i) => (
+                            <span key={i} className="badge badge-primary" style={{ padding: '6px 12px' }}>
+                                {cat}
+                            </span>
+                        ))}
+                    </div>
+                </>
+            )}
+
+            {/* Show extracted links from homepage */}
+            {extractedLinks.length > 0 && categories.length === 0 && (
+                <>
+                    <h4 style={{ marginBottom: '12px' }}>Site Links ({extractedLinks.length} found)</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '24px', maxHeight: '200px', overflowY: 'auto' }}>
+                        {extractedLinks.slice(0, 20).map((link, i) => (
+                            <div key={i} style={{ fontSize: '13px' }}>
+                                <a href={link.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary-600)' }}>
+                                    {link.text}
+                                </a>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            )}
 
             {categories.length > 0 && (
                 <>
@@ -1587,26 +1704,64 @@ function UserInsights({ userBehavior }) {
             {/* Query Complexity Breakdown */}
             <div style={{ marginBottom: '32px' }}>
                 <h4 style={{ marginBottom: '16px' }}>Query Complexity</h4>
-                <div className="metrics-grid">
-                    <div className="metric-card">
-                        <div className="metric-label">Single Word</div>
-                        <div className="metric-value">{queryComplexity?.singleWord || 0}</div>
-                        <div className="metric-trend">{queryComplexity?.percentages?.singleWord || 0}%</div>
+                <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+                    {/* Pie Chart */}
+                    <div style={{ flex: '1', minWidth: '280px', height: '250px' }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={[
+                                        { name: 'Single Word', value: queryComplexity?.singleWord || 0, color: '#94a3b8' },
+                                        { name: 'Simple Phrase', value: queryComplexity?.simplePhrase || 0, color: '#60a5fa' },
+                                        { name: 'Advanced Search', value: queryComplexity?.advancedSearch || 0, color: '#34d399' },
+                                        { name: 'Natural Language', value: queryComplexity?.naturalLanguage || 0, color: '#a78bfa' },
+                                    ].filter(d => d.value > 0)}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={50}
+                                    outerRadius={80}
+                                    paddingAngle={2}
+                                    dataKey="value"
+                                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                    labelLine={false}
+                                >
+                                    {[
+                                        { name: 'Single Word', value: queryComplexity?.singleWord || 0, color: '#94a3b8' },
+                                        { name: 'Simple Phrase', value: queryComplexity?.simplePhrase || 0, color: '#60a5fa' },
+                                        { name: 'Advanced Search', value: queryComplexity?.advancedSearch || 0, color: '#34d399' },
+                                        { name: 'Natural Language', value: queryComplexity?.naturalLanguage || 0, color: '#a78bfa' },
+                                    ].filter(d => d.value > 0).map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                    ))}
+                                </Pie>
+                                <Tooltip formatter={(value) => [value, 'Queries']} />
+                            </PieChart>
+                        </ResponsiveContainer>
                     </div>
-                    <div className="metric-card">
-                        <div className="metric-label">Simple Phrase</div>
-                        <div className="metric-value">{queryComplexity?.simplePhrase || 0}</div>
-                        <div className="metric-trend">{queryComplexity?.percentages?.simplePhrase || 0}%</div>
-                    </div>
-                    <div className="metric-card">
-                        <div className="metric-label">Advanced Search</div>
-                        <div className="metric-value">{queryComplexity?.advancedSearch || 0}</div>
-                        <div className="metric-trend positive">{queryComplexity?.percentages?.advancedSearch || 0}%</div>
-                    </div>
-                    <div className="metric-card">
-                        <div className="metric-label">Natural Language</div>
-                        <div className="metric-value">{queryComplexity?.naturalLanguage || 0}</div>
-                        <div className="metric-trend positive">{queryComplexity?.percentages?.naturalLanguage || 0}%</div>
+                    {/* Metric Cards */}
+                    <div style={{ flex: '1', minWidth: '280px' }}>
+                        <div className="metrics-grid">
+                            <div className="metric-card">
+                                <div className="metric-label">Single Word</div>
+                                <div className="metric-value">{queryComplexity?.singleWord || 0}</div>
+                                <div className="metric-trend">{queryComplexity?.percentages?.singleWord || 0}%</div>
+                            </div>
+                            <div className="metric-card">
+                                <div className="metric-label">Simple Phrase</div>
+                                <div className="metric-value">{queryComplexity?.simplePhrase || 0}</div>
+                                <div className="metric-trend">{queryComplexity?.percentages?.simplePhrase || 0}%</div>
+                            </div>
+                            <div className="metric-card">
+                                <div className="metric-label">Advanced Search</div>
+                                <div className="metric-value">{queryComplexity?.advancedSearch || 0}</div>
+                                <div className="metric-trend positive">{queryComplexity?.percentages?.advancedSearch || 0}%</div>
+                            </div>
+                            <div className="metric-card">
+                                <div className="metric-label">Natural Language</div>
+                                <div className="metric-value">{queryComplexity?.naturalLanguage || 0}</div>
+                                <div className="metric-trend positive">{queryComplexity?.percentages?.naturalLanguage || 0}%</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1636,23 +1791,61 @@ function UserInsights({ userBehavior }) {
             {/* Intent Categories */}
             <div style={{ marginBottom: '32px' }}>
                 <h4 style={{ marginBottom: '16px' }}>User Intent Categories</h4>
-                <div className="metrics-grid">
-                    <div className="metric-card">
-                        <div className="metric-label">Product Search</div>
-                        <div className="metric-value">{intentCategories?.productSearch || 0}</div>
+                <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+                    {/* Pie Chart */}
+                    <div style={{ flex: '1', minWidth: '280px', height: '250px' }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={[
+                                        { name: 'Product Search', value: intentCategories?.productSearch || 0, color: '#6366f1' },
+                                        { name: 'Location Query', value: intentCategories?.locationQuery || 0, color: '#22d3ee' },
+                                        { name: 'Category Browse', value: intentCategories?.categoryBrowse || 0, color: '#f59e0b' },
+                                        { name: 'Support Request', value: intentCategories?.supportRequest || 0, color: '#ef4444' },
+                                    ].filter(d => d.value > 0)}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={50}
+                                    outerRadius={80}
+                                    paddingAngle={2}
+                                    dataKey="value"
+                                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                    labelLine={false}
+                                >
+                                    {[
+                                        { name: 'Product Search', value: intentCategories?.productSearch || 0, color: '#6366f1' },
+                                        { name: 'Location Query', value: intentCategories?.locationQuery || 0, color: '#22d3ee' },
+                                        { name: 'Category Browse', value: intentCategories?.categoryBrowse || 0, color: '#f59e0b' },
+                                        { name: 'Support Request', value: intentCategories?.supportRequest || 0, color: '#ef4444' },
+                                    ].filter(d => d.value > 0).map((entry, index) => (
+                                        <Cell key={`cell-intent-${index}`} fill={entry.color} />
+                                    ))}
+                                </Pie>
+                                <Tooltip formatter={(value) => [value, 'Queries']} />
+                            </PieChart>
+                        </ResponsiveContainer>
                     </div>
-                    <div className="metric-card">
-                        <div className="metric-label">Location Query</div>
-                        <div className="metric-value">{intentCategories?.locationQuery || 0}</div>
-                    </div>
-                    <div className="metric-card">
-                        <div className="metric-label">Category Browse</div>
-                        <div className="metric-value">{intentCategories?.categoryBrowse || 0}</div>
-                    </div>
-                    <div className="metric-card">
-                        <div className="metric-label">Support Request</div>
-                        <div className="metric-value" style={{ color: intentCategories?.supportRequest > 0 ? 'var(--color-warning-500)' : 'inherit' }}>
-                            {intentCategories?.supportRequest || 0}
+                    {/* Metric Cards */}
+                    <div style={{ flex: '1', minWidth: '280px' }}>
+                        <div className="metrics-grid">
+                            <div className="metric-card">
+                                <div className="metric-label">Product Search</div>
+                                <div className="metric-value">{intentCategories?.productSearch || 0}</div>
+                            </div>
+                            <div className="metric-card">
+                                <div className="metric-label">Location Query</div>
+                                <div className="metric-value">{intentCategories?.locationQuery || 0}</div>
+                            </div>
+                            <div className="metric-card">
+                                <div className="metric-label">Category Browse</div>
+                                <div className="metric-value">{intentCategories?.categoryBrowse || 0}</div>
+                            </div>
+                            <div className="metric-card">
+                                <div className="metric-label">Support Request</div>
+                                <div className="metric-value" style={{ color: intentCategories?.supportRequest > 0 ? 'var(--color-warning-500)' : 'inherit' }}>
+                                    {intentCategories?.supportRequest || 0}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

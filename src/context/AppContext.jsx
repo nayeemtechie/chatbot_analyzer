@@ -124,37 +124,10 @@ export function AppProvider({ children }) {
                 }
             }
 
-            // Restore results from sessionStorage (survives HMR refresh)
-            const savedResults = sessionStorage.getItem(STORAGE_KEYS.results);
-            if (savedResults) {
-                try {
-                    initial.results = JSON.parse(savedResults);
-                    console.log('✅ Restored analysis results from session');
-                } catch (e) {
-                    console.error('Failed to parse saved results:', e);
-                }
-            }
-
-            // Restore transcripts from sessionStorage
-            const savedTranscripts = sessionStorage.getItem(STORAGE_KEYS.transcripts);
-            if (savedTranscripts) {
-                try {
-                    initial.parsedTranscripts = JSON.parse(savedTranscripts);
-                    console.log('✅ Restored transcripts from session:', initial.parsedTranscripts.length);
-                } catch (e) {
-                    console.error('Failed to parse saved transcripts:', e);
-                }
-            }
-
-            // Restore business context from sessionStorage
-            const savedBusinessContext = sessionStorage.getItem(STORAGE_KEYS.businessContext);
-            if (savedBusinessContext) {
-                try {
-                    initial.businessContext = { ...initial.businessContext, ...JSON.parse(savedBusinessContext) };
-                } catch (e) {
-                    console.error('Failed to parse saved business context:', e);
-                }
-            }
+            // Clear session data on page load for fresh start
+            sessionStorage.removeItem(STORAGE_KEYS.results);
+            sessionStorage.removeItem(STORAGE_KEYS.transcripts);
+            sessionStorage.removeItem(STORAGE_KEYS.businessContext);
         }
         return initial;
     });

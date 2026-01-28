@@ -34,6 +34,83 @@ export function exportAsPdf(results, filename = 'chatbot-analysis') {
 }
 
 /**
+ * Generate SVG donut chart for PDF export
+ * @param {Array} data - Array of {name, value, color} objects
+ * @param {number} size - Chart size in pixels
+ * @returns {string} - SVG markup
+ */
+function generateSvgDonutChart(data, size = 180) {
+    const total = data.reduce((sum, d) => sum + (d.value || 0), 0);
+    if (total === 0) return '';
+
+    const cx = size / 2;
+    const cy = size / 2;
+    const outerRadius = size / 2 - 10;
+    const innerRadius = outerRadius * 0.6; // Donut hole
+
+    let svg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">`;
+
+    let startAngle = -90; // Start from top
+
+    data.forEach((segment, index) => {
+        if (segment.value <= 0) return;
+
+        const percentage = (segment.value / total) * 100;
+        const angle = (segment.value / total) * 360;
+        const endAngle = startAngle + angle;
+
+        // Calculate arc path
+        const startRad = (startAngle * Math.PI) / 180;
+        const endRad = (endAngle * Math.PI) / 180;
+
+        const x1 = cx + outerRadius * Math.cos(startRad);
+        const y1 = cy + outerRadius * Math.sin(startRad);
+        const x2 = cx + outerRadius * Math.cos(endRad);
+        const y2 = cy + outerRadius * Math.sin(endRad);
+
+        const x3 = cx + innerRadius * Math.cos(endRad);
+        const y3 = cy + innerRadius * Math.sin(endRad);
+        const x4 = cx + innerRadius * Math.cos(startRad);
+        const y4 = cy + innerRadius * Math.sin(startRad);
+
+        const largeArc = angle > 180 ? 1 : 0;
+
+        // Draw arc segment
+        const path = `
+            M ${x1} ${y1}
+            A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${x2} ${y2}
+            L ${x3} ${y3}
+            A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${x4} ${y4}
+            Z
+        `;
+
+        svg += `<path d="${path}" fill="${segment.color}" stroke="#fff" stroke-width="2"/>`;
+
+        // Add label at middle of arc
+        const midAngle = startAngle + angle / 2;
+        const midRad = (midAngle * Math.PI) / 180;
+        const labelRadius = outerRadius + 25;
+        const labelX = cx + labelRadius * Math.cos(midRad);
+        const labelY = cy + labelRadius * Math.sin(midRad);
+
+        if (percentage >= 5) { // Only show label if segment is big enough
+            svg += `<text x="${labelX}" y="${labelY}" 
+                text-anchor="middle" 
+                dominant-baseline="middle" 
+                font-size="11" 
+                font-family="sans-serif"
+                fill="${segment.color}"
+                font-weight="500">${segment.name} ${Math.round(percentage)}%</text>`;
+        }
+
+        startAngle = endAngle;
+    });
+
+    svg += '</svg>';
+    return svg;
+}
+
+/**
  * Generate styled PDF report with each section as a page
  */
 function generateStyledPdfReport(results, filename = 'chatbot-analysis') {
@@ -206,6 +283,84 @@ function generateStyledPdfReport(results, filename = 'chatbot-analysis') {
             </div>
         </div>`;
     }
+
+    // LLM Site Analysis section
+    const llmAnalysis = websiteContent?.llmAnalysis;
+    if (llmAnalysis) {
+        html += `
+        <div style="margin-top: 24px; padding: 20px; background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); border-radius: 12px; border: 1px solid #a5b4fc;">
+            <h2 style="margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
+                🤖 AI-Powered Site Analysis
+                <span class="badge badge-primary">LLM</span>
+            </h2>
+            <div class="metrics-grid">`;
+
+        if (llmAnalysis.industry) {
+            html += `
+                <div class="metric-card" style="background: rgba(255,255,255,0.9);">
+                    <div class="metric-label">Industry</div>
+                    <div class="metric-value" style="font-size: 16px;">${llmAnalysis.industry}</div>
+                </div>`;
+        }
+        if (llmAnalysis.businessType) {
+            html += `
+                <div class="metric-card" style="background: rgba(255,255,255,0.9);">
+                    <div class="metric-label">Business Type</div>
+                    <div class="metric-value" style="font-size: 16px;">${llmAnalysis.businessType}</div>
+                </div>`;
+        }
+        if (llmAnalysis.targetAudience) {
+            html += `
+                <div class="metric-card" style="background: rgba(255,255,255,0.9);">
+                    <div class="metric-label">Target Audience</div>
+                    <div class="metric-value" style="font-size: 13px;">${llmAnalysis.targetAudience}</div>
+                </div>`;
+        }
+        html += `</div>`;
+
+        if (llmAnalysis.mainCategories?.length > 0) {
+            html += `
+            <div style="margin-top: 16px;">
+                <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px; color: #475569;">Main Categories</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">`;
+            llmAnalysis.mainCategories.forEach(cat => {
+                const catName = typeof cat === 'object' ? cat.name : cat;
+                html += `<span class="badge badge-primary">${catName}</span>`;
+            });
+            html += `</div></div>`;
+        }
+
+        if (llmAnalysis.productTypes?.length > 0) {
+            html += `
+            <div style="margin-top: 16px;">
+                <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px; color: #475569;">Product Types</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">`;
+            llmAnalysis.productTypes.slice(0, 10).forEach(type => {
+                html += `<span class="badge badge-neutral">${type}</span>`;
+            });
+            html += `</div></div>`;
+        }
+
+        if (llmAnalysis.keyFeatures?.length > 0) {
+            html += `
+            <div style="margin-top: 16px;">
+                <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px; color: #475569;">Key Features</div>
+                <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #64748b;">`;
+            llmAnalysis.keyFeatures.slice(0, 5).forEach(feature => {
+                html += `<li>${feature}</li>`;
+            });
+            html += `</ul></div>`;
+        }
+
+        if (llmAnalysis.confidence) {
+            html += `
+            <div style="margin-top: 12px; font-size: 11px; color: #64748b;">
+                Confidence: ${llmAnalysis.confidence.overall}${llmAnalysis.confidence.reason ? ` • ${llmAnalysis.confidence.reason}` : ''}
+                ${llmAnalysis.dataSource === 'url-inference' ? ' (URL-only inference)' : ''}
+            </div>`;
+        }
+        html += `</div>`;
+    }
     html += `</div>`;
 
     // Page 2: Session Overview
@@ -320,47 +475,84 @@ function generateStyledPdfReport(results, filename = 'chatbot-analysis') {
             <h1>User Insights</h1>
         </div>
         <h2>Query Complexity</h2>
-        <div class="metrics-grid">
-            <div class="metric-card">
-                <div class="metric-label">Single Word</div>
-                <div class="metric-value">${queryComplexity.singleWord || 0}</div>
-                <div style="font-size: 12px; color: #64748b;">${queryComplexity.percentages?.singleWord || 0}%</div>
+        <div style="display: flex; align-items: flex-start; gap: 32px; margin-bottom: 24px;">
+            <div style="flex: 0 0 auto;">`;
+
+    // Generate Query Complexity donut chart
+    const complexityChartData = [
+        { name: 'Single Word', value: queryComplexity.singleWord || 0, color: '#94a3b8' },
+        { name: 'Simple Phrase', value: queryComplexity.simplePhrase || 0, color: '#60a5fa' },
+        { name: 'Advanced', value: queryComplexity.advancedSearch || 0, color: '#34d399' },
+        { name: 'Natural Lang.', value: queryComplexity.naturalLanguage || 0, color: '#a78bfa' }
+    ].filter(d => d.value > 0);
+
+    if (complexityChartData.length > 0) {
+        html += generateSvgDonutChart(complexityChartData, 200);
+    }
+
+    html += `
             </div>
-            <div class="metric-card">
-                <div class="metric-label">Simple Phrase</div>
-                <div class="metric-value">${queryComplexity.simplePhrase || 0}</div>
-                <div style="font-size: 12px; color: #64748b;">${queryComplexity.percentages?.simplePhrase || 0}%</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-label">Advanced Search</div>
-                <div class="metric-value positive">${queryComplexity.advancedSearch || 0}</div>
-                <div style="font-size: 12px; color: #64748b;">${queryComplexity.percentages?.advancedSearch || 0}%</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-label">Natural Language</div>
-                <div class="metric-value positive">${queryComplexity.naturalLanguage || 0}</div>
-                <div style="font-size: 12px; color: #64748b;">${queryComplexity.percentages?.naturalLanguage || 0}%</div>
+            <div class="metrics-grid" style="flex: 1;">
+                <div class="metric-card">
+                    <div class="metric-label">Single Word</div>
+                    <div class="metric-value">${queryComplexity.singleWord || 0}</div>
+                    <div style="font-size: 12px; color: #64748b;">${queryComplexity.percentages?.singleWord || 0}%</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Simple Phrase</div>
+                    <div class="metric-value">${queryComplexity.simplePhrase || 0}</div>
+                    <div style="font-size: 12px; color: #64748b;">${queryComplexity.percentages?.simplePhrase || 0}%</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Advanced Search</div>
+                    <div class="metric-value positive">${queryComplexity.advancedSearch || 0}</div>
+                    <div style="font-size: 12px; color: #64748b;">${queryComplexity.percentages?.advancedSearch || 0}%</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Natural Language</div>
+                    <div class="metric-value positive">${queryComplexity.naturalLanguage || 0}</div>
+                    <div style="font-size: 12px; color: #64748b;">${queryComplexity.percentages?.naturalLanguage || 0}%</div>
+                </div>
             </div>
         </div>
         <h2>Intent Categories</h2>
-        <div class="metrics-grid">
-            <div class="metric-card">
-                <div class="metric-label">Product Search</div>
-                <div class="metric-value">${intentCategories.productSearch || 0}</div>
+        <div style="display: flex; align-items: flex-start; gap: 32px; margin-bottom: 24px;">
+            <div style="flex: 0 0 auto;">`;
+
+    // Generate Intent Categories donut chart
+    const intentChartData = [
+        { name: 'Product Search', value: intentCategories.productSearch || 0, color: '#60a5fa' },
+        { name: 'Category Browse', value: intentCategories.categoryBrowse || 0, color: '#fbbf24' },
+        { name: 'Location Query', value: intentCategories.locationQuery || 0, color: '#f472b6' },
+        { name: 'Support', value: intentCategories.supportRequest || 0, color: '#f87171' }
+    ].filter(d => d.value > 0);
+
+    if (intentChartData.length > 0) {
+        html += generateSvgDonutChart(intentChartData, 200);
+    }
+
+    html += `
             </div>
-            <div class="metric-card">
-                <div class="metric-label">Location Query</div>
-                <div class="metric-value">${intentCategories.locationQuery || 0}</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-label">Category Browse</div>
-                <div class="metric-value">${intentCategories.categoryBrowse || 0}</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-label">Support Request</div>
-                <div class="metric-value" style="color: ${intentCategories.supportRequest > 0 ? '#f59e0b' : '#6366f1'};">${intentCategories.supportRequest || 0}</div>
+            <div class="metrics-grid" style="flex: 1;">
+                <div class="metric-card">
+                    <div class="metric-label">Product Search</div>
+                    <div class="metric-value">${intentCategories.productSearch || 0}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Location Query</div>
+                    <div class="metric-value">${intentCategories.locationQuery || 0}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Category Browse</div>
+                    <div class="metric-value">${intentCategories.categoryBrowse || 0}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Support Request</div>
+                    <div class="metric-value" style="color: ${intentCategories.supportRequest > 0 ? '#f59e0b' : '#6366f1'};">${intentCategories.supportRequest || 0}</div>
+                </div>
             </div>
         </div>`;
+
 
     // Repeated Queries section
     const repeatedQueries = userBehavior.repeatedQueries || {};
@@ -469,6 +661,52 @@ function generateMarkdownReport(results) {
     const dataQuality = analysis.dataQualityNotes || {};
 
     let md = '# Chatbot Transcript Analysis Report\n\n';
+
+    // Site Information section
+    const websiteContent = results?.businessContext?.websiteContent;
+    md += '## Site Information\n\n';
+    md += `- **Website URL**: ${results?.websiteUrl || 'N/A'}\n`;
+    md += `- **AI Analysis**: ${results?.llmEnabled ? 'Enabled' : 'Disabled'}\n`;
+
+    if (websiteContent?.success) {
+        md += `- **Sitemap URLs**: ${websiteContent.sitemap?.urls?.length || 0}\n`;
+        md += `- **Categories Analyzed**: ${websiteContent.categories?.length || 0}\n`;
+        md += `- **Products Analyzed**: ${websiteContent.products?.length || 0}\n`;
+    }
+
+    // LLM Site Analysis
+    const llmAnalysis = websiteContent?.llmAnalysis;
+    if (llmAnalysis) {
+        md += '\n### AI-Powered Site Analysis 🤖\n\n';
+        if (llmAnalysis.industry) md += `- **Industry**: ${llmAnalysis.industry}\n`;
+        if (llmAnalysis.businessType) md += `- **Business Type**: ${llmAnalysis.businessType}\n`;
+        if (llmAnalysis.targetAudience) md += `- **Target Audience**: ${llmAnalysis.targetAudience}\n`;
+
+        if (llmAnalysis.mainCategories?.length > 0) {
+            md += '\n**Main Categories**: ';
+            const catNames = llmAnalysis.mainCategories.map(c => typeof c === 'object' ? c.name : c);
+            md += catNames.join(', ') + '\n';
+        }
+
+        if (llmAnalysis.productTypes?.length > 0) {
+            md += '\n**Product Types**: ' + llmAnalysis.productTypes.slice(0, 10).join(', ') + '\n';
+        }
+
+        if (llmAnalysis.keyFeatures?.length > 0) {
+            md += '\n**Key Features**:\n';
+            llmAnalysis.keyFeatures.slice(0, 5).forEach(f => {
+                md += `- ${f}\n`;
+            });
+        }
+
+        if (llmAnalysis.confidence) {
+            md += `\n*Confidence: ${llmAnalysis.confidence.overall}`;
+            if (llmAnalysis.confidence.reason) md += ` - ${llmAnalysis.confidence.reason}`;
+            if (llmAnalysis.dataSource === 'url-inference') md += ' (URL-only inference)';
+            md += '*\n';
+        }
+    }
+    md += '\n';
 
     md += '## Session Overview\n';
     md += `- **Total Sessions**: ${overview.totalSessions || 'N/A'}\n`;

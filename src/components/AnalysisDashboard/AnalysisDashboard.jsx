@@ -26,9 +26,13 @@ export default function AnalysisDashboard() {
         setFetchProgress('Starting...');
 
         try {
-            const result = await scrapeWebsite(businessContext.websiteUrl, (message, progress) => {
-                setFetchProgress(message);
-            });
+            const result = await scrapeWebsite(
+                businessContext.websiteUrl,
+                (message, progress) => {
+                    setFetchProgress(message);
+                },
+                isLLMConfigured ? llmConfig : null
+            );
 
             actions.setBusinessContext({ websiteContent: result });
             setFetchProgress(result.success ? 'Content fetched!' : 'Partial fetch');

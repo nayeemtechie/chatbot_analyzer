@@ -124,6 +124,8 @@ function normalizeMessages(messages) {
         role: normalizeRole(msg.role || msg.sender || 'unknown'),
         content: msg.content || msg.text || msg.message || '',
         timestamp: msg.timestamp || null,
+        // Preserve RESULTS data (STYLES, PRODUCTS) if present
+        ...(msg.results && { results: msg.results }),
     }));
 }
 
